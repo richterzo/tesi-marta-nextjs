@@ -287,7 +287,7 @@ export function WordGenerator() {
 
       let yPosition = 45
       const pageHeight = 280
-      const columnWidth = 90
+      // const columnWidth = 90
       const leftMargin = 15
       const rightMargin = 105
 
