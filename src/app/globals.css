@@ -121,6 +121,8 @@
     @apply bg-background text-foreground;
     font-size: 16px;
     line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
   }
 
   *:focus-visible {
@@ -137,11 +139,13 @@
     @apply font-medium;
   }
 
-  button:hover,
-  a:hover,
-  [role='button']:hover {
-    transform: translateY(-1px);
-    transition: transform 0.1s ease-in-out;
+  @media (hover: hover) {
+    button:hover,
+    a:hover,
+    [role='button']:hover {
+      transform: translateY(-1px);
+      transition: transform 0.1s ease-in-out;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -189,6 +193,73 @@
   @media (prefers-contrast: high) {
     * {
       border-width: 2px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    body {
+      font-size: 16px;
+    }
+
+    .container {
+      @apply px-3;
+    }
+
+    input,
+    textarea,
+    select {
+      @apply text-base;
+      min-height: 48px;
+    }
+
+    button {
+      min-height: 48px;
+      @apply text-base;
+    }
+
+    .space-y-6 > * + * {
+      margin-top: 1rem !important;
+    }
+
+    [data-component='card'] {
+      @apply m-2;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    body {
+      font-size: 17px;
+    }
+  }
+
+  @media (min-width: 1025px) {
+    body {
+      font-size: 18px;
+    }
+  }
+
+  @media (pointer: coarse) {
+    button,
+    a,
+    [role='button'] {
+      min-height: 48px;
+      padding: 12px 16px;
+    }
+
+    [role='checkbox'],
+    input[type='checkbox'] {
+      min-width: 24px;
+      min-height: 24px;
+    }
+  }
+
+  @media (max-width: 896px) and (orientation: landscape) {
+    .container {
+      @apply py-2;
+    }
+
+    .space-y-6 > * + * {
+      margin-top: 0.75rem !important;
     }
   }
 }

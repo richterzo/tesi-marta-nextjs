@@ -131,31 +131,29 @@ export function WordGenerator() {
               consonanti[Math.floor(Math.random() * consonanti.length)]
           }
 
-          // Logica per consonanti doppie
+          // Logica migliorata per consonanti doppie
           if (
             i > 0 &&
-            numeroDoppie > countNumeroDoppie &&
-            count % Math.floor(totalWords / numeroDoppie) === 0 &&
+            numeroDoppie > 0 &&
+            countNumeroDoppie < numeroDoppie &&
             !doppiaGiaInserita
           ) {
-            if (selectedSyllables === 2 && i === 1) {
-              consonanteRandom += ':'
-              countNumeroDoppie++
-              doppiaGiaInserita = true
-            } else if (selectedSyllables === 3) {
-              if (
-                (countNumeroDoppie % 2 === 0 && i === 1) ||
-                (countNumeroDoppie % 2 !== 0 && i === 2)
-              ) {
+            const shouldAddDouble =
+              Math.random() <
+              (numeroDoppie - countNumeroDoppie) / (totalWords - j)
+
+            if (shouldAddDouble) {
+              if (selectedSyllables === 2 && i === 1) {
                 consonanteRandom += ':'
                 countNumeroDoppie++
                 doppiaGiaInserita = true
-              }
-            } else if (selectedSyllables === 4) {
-              if (
-                (countNumeroDoppie % 3 === 0 && i === 1) ||
-                (countNumeroDoppie % 3 === 1 && i === 2) ||
-                (countNumeroDoppie % 3 === 2 && i === 3)
+              } else if (selectedSyllables === 3 && (i === 1 || i === 2)) {
+                consonanteRandom += ':'
+                countNumeroDoppie++
+                doppiaGiaInserita = true
+              } else if (
+                selectedSyllables === 4 &&
+                (i === 1 || i === 2 || i === 3)
               ) {
                 consonanteRandom += ':'
                 countNumeroDoppie++
@@ -164,7 +162,7 @@ export function WordGenerator() {
             }
           }
 
-          // Logica per l'accento
+          // Logica per l'accento - USO APOSTROFO NORMALE
           const shouldAddAccent = () => {
             if (selectedSyllables === 2) {
               return (count < 10 && i === 0) || (count >= 10 && i === 1)
@@ -186,14 +184,14 @@ export function WordGenerator() {
           }
 
           if (shouldAddAccent()) {
-            parola += '&apos;' + consonanteRandom + vocaleRandom
+            parola += "'" + consonanteRandom + vocaleRandom
           } else {
             parola += consonanteRandom + vocaleRandom
           }
         }
 
         if (paroleGenerate.includes(parola)) {
-          countNumeroDoppie--
+          if (doppiaGiaInserita) countNumeroDoppie--
         }
       } while (paroleGenerate.includes(parola))
 
@@ -252,23 +250,25 @@ export function WordGenerator() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 lg:space-y-8">
       {/* Selezione sillabe */}
       <Card>
         <CardHeader>
-          <CardTitle>Seleziona il numero di sillabe</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-lg lg:text-xl">
+            Seleziona il numero di sillabe
+          </CardTitle>
+          <CardDescription className="text-sm lg:text-base">
             Scegli quante sillabe devono avere le parole generate
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 justify-center">
             {[2, 3, 4].map((num) => (
               <Button
                 key={num}
                 variant={selectedSyllables === num ? 'default' : 'outline'}
                 onClick={() => handleSyllableSelection(num as SyllableCount)}
-                className="min-w-32"
+                className="w-full sm:w-auto min-w-[120px] h-12 text-base"
                 aria-pressed={selectedSyllables === num}
               >
                 {num} Sillabe
@@ -282,21 +282,23 @@ export function WordGenerator() {
       {selectedSyllables && (
         <Card>
           <CardHeader>
-            <CardTitle>Configurazione fonemi</CardTitle>
-            <CardDescription className="text-sm leading-relaxed">
+            <CardTitle className="text-lg lg:text-xl">
+              Configurazione fonemi
+            </CardTitle>
+            <CardDescription className="text-sm lg:text-base leading-relaxed">
               {getInstructions()}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 lg:space-y-6">
             {/* Consonanti Sorde */}
-            <div className="space-y-3">
+            <div className="space-y-2 lg:space-y-3">
               <Label
                 htmlFor="consonanti-sorde"
-                className="text-base font-medium"
+                className="text-sm lg:text-base font-medium"
               >
                 Consonanti Sorde
               </Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs lg:text-sm text-muted-foreground">
                 Scegli tra: {CONSONANTI_SORDE.join(', ')}
               </p>
               <Textarea
@@ -304,7 +306,7 @@ export function WordGenerator() {
                 placeholder="es: p t f s"
                 value={consonantiSorde}
                 onChange={(e) => setConsonantiSorde(e.target.value)}
-                className="min-h-20"
+                className="min-h-16 lg:min-h-20 text-base"
                 aria-describedby="consonanti-sorde-help"
               />
               <p
@@ -316,14 +318,14 @@ export function WordGenerator() {
             </div>
 
             {/* Consonanti Sonore */}
-            <div className="space-y-3">
+            <div className="space-y-2 lg:space-y-3">
               <Label
                 htmlFor="consonanti-sonore"
-                className="text-base font-medium"
+                className="text-sm lg:text-base font-medium"
               >
                 Consonanti Sonore
               </Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs lg:text-sm text-muted-foreground">
                 Scegli tra: {CONSONANTI_SONORE.join(', ')}
               </p>
               <Textarea
@@ -331,7 +333,7 @@ export function WordGenerator() {
                 placeholder="es: b d v z m n l r"
                 value={consonantiSonore}
                 onChange={(e) => setConsonantiSonore(e.target.value)}
-                className="min-h-20"
+                className="min-h-16 lg:min-h-20 text-base"
                 aria-describedby="consonanti-sonore-help"
               />
               <p
@@ -343,8 +345,11 @@ export function WordGenerator() {
             </div>
 
             {/* Vocali */}
-            <div className="space-y-3">
-              <Label htmlFor="vocali" className="text-base font-medium">
+            <div className="space-y-2 lg:space-y-3">
+              <Label
+                htmlFor="vocali"
+                className="text-sm lg:text-base font-medium"
+              >
                 Vocali
               </Label>
               <Textarea
@@ -352,7 +357,7 @@ export function WordGenerator() {
                 placeholder="es: a e i o u"
                 value={vocali}
                 onChange={(e) => setVocali(e.target.value)}
-                className="min-h-20"
+                className="min-h-16 lg:min-h-20 text-base"
                 aria-describedby="vocali-help"
               />
               <p id="vocali-help" className="text-xs text-muted-foreground">
@@ -361,29 +366,36 @@ export function WordGenerator() {
             </div>
 
             {/* Numero doppie */}
-            <div className="space-y-3">
-              <Label htmlFor="numero-doppie" className="text-base font-medium">
+            <div className="space-y-2 lg:space-y-3">
+              <Label
+                htmlFor="numero-doppie"
+                className="text-sm lg:text-base font-medium"
+              >
                 Numero di parole con consonanti doppie
               </Label>
               <Input
                 id="numero-doppie"
                 type="number"
                 min="0"
-                max="10"
-                value={numeroDoppie}
+                max="15"
+                value={numeroDoppie || ''}
                 onChange={(e) => setNumeroDoppie(parseInt(e.target.value) || 0)}
-                className="max-w-32"
+                className="max-w-32 h-12 text-base"
                 aria-describedby="numero-doppie-help"
               />
               <p
                 id="numero-doppie-help"
                 className="text-xs text-muted-foreground"
               >
-                Quante parole devono contenere consonanti doppie
+                Quante parole devono contenere consonanti doppie (max 15)
               </p>
             </div>
 
-            <Button onClick={generateWords} className="w-full" size="lg">
+            <Button
+              onClick={generateWords}
+              className="w-full h-12 text-base lg:text-lg"
+              size="lg"
+            >
               Genera Parole
             </Button>
           </CardContent>
@@ -394,16 +406,18 @@ export function WordGenerator() {
       {showResults && (
         <Card>
           <CardHeader>
-            <CardTitle>Parole Generate</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg lg:text-xl">
+              Parole Generate
+            </CardTitle>
+            <CardDescription className="text-sm lg:text-base">
               Puoi modificare manualmente le parole prima di generare le liste
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-3">
+          <CardContent className="space-y-4 lg:space-y-6">
+            <div className="space-y-2 lg:space-y-3">
               <Label
                 htmlFor="parole-generate"
-                className="text-base font-medium"
+                className="text-sm lg:text-base font-medium"
               >
                 Non-parole generate
               </Label>
@@ -411,7 +425,7 @@ export function WordGenerator() {
                 id="parole-generate"
                 value={paroleGenerate}
                 onChange={(e) => setParoleGenerate(e.target.value)}
-                className="min-h-32 font-mono"
+                className="min-h-24 lg:min-h-32 font-mono text-sm lg:text-base"
                 aria-describedby="parole-generate-help"
               />
               <p
@@ -422,18 +436,26 @@ export function WordGenerator() {
               </p>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3 p-3 lg:p-4 bg-muted/50 rounded-lg">
               <Checkbox
                 id="salva-pdf"
                 checked={salvaPDF}
-                onCheckedChange={(checked) => setSalvaPDF(checked as boolean)}
+                onCheckedChange={(checked) => setSalvaPDF(!!checked)}
+                className="h-5 w-5"
               />
-              <Label htmlFor="salva-pdf" className="text-base font-medium">
-                Salva anche in PDF
+              <Label
+                htmlFor="salva-pdf"
+                className="text-sm lg:text-base font-medium cursor-pointer"
+              >
+                Salva automaticamente anche in PDF
               </Label>
             </div>
 
-            <Button onClick={generateLists} className="w-full" size="lg">
+            <Button
+              onClick={generateLists}
+              className="w-full h-12 text-base lg:text-lg"
+              size="lg"
+            >
               Genera 5 Liste Randomizzate
             </Button>
           </CardContent>
@@ -444,16 +466,16 @@ export function WordGenerator() {
       {risultato && (
         <Card>
           <CardHeader>
-            <CardTitle>Liste Generate</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg lg:text-xl">Liste Generate</CardTitle>
+            <CardDescription className="text-sm lg:text-base">
               5 liste con ordine randomizzato delle parole
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 lg:space-y-3">
               <Label
                 htmlFor="risultato-finale"
-                className="text-base font-medium"
+                className="text-sm lg:text-base font-medium"
               >
                 Risultato
               </Label>
@@ -461,15 +483,15 @@ export function WordGenerator() {
                 id="risultato-finale"
                 value={risultato}
                 readOnly
-                className="min-h-96 font-mono text-sm"
+                className="min-h-64 lg:min-h-96 font-mono text-xs lg:text-sm"
                 aria-describedby="risultato-finale-help"
               />
               <p
                 id="risultato-finale-help"
                 className="text-xs text-muted-foreground"
               >
-                Le 5 liste sono pronte per l'uso. Se hai selezionato l'opzione
-                PDF, è stato generato automaticamente.
+                Le 5 liste sono pronte per l&apos;uso.{' '}
+                {salvaPDF && 'Il PDF è stato generato automaticamente.'}
               </p>
             </div>
           </CardContent>
