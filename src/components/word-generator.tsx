@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import jsPDF from 'jspdf'
+import { FileDown, Plus } from 'lucide-react'
 
 type SyllableCount = 2 | 3 | 4 | null
 
@@ -43,6 +44,8 @@ const CONSONANTI_SONORE = [
   '/r/',
 ]
 
+const VOCALI_COMUNI = ['/a/', '/e/', '/i/', '/o/', '/u/']
+
 export function WordGenerator() {
   const [selectedSyllables, setSelectedSyllables] =
     useState<SyllableCount>(null)
@@ -52,7 +55,7 @@ export function WordGenerator() {
   const [numeroDoppie, setNumeroDoppie] = useState(0)
   const [paroleGenerate, setParoleGenerate] = useState('')
   const [risultato, setRisultato] = useState('')
-  const [salvaPDF, setSalvaPDF] = useState(false)
+  const [salvaPDF, setSalvaPDF] = useState(true)
   const [showResults, setShowResults] = useState(false)
 
   const handleSyllableSelection = (syllables: SyllableCount) => {
@@ -65,13 +68,43 @@ export function WordGenerator() {
   const getInstructions = () => {
     switch (selectedSyllables) {
       case 2:
-        return 'Inserire almeno due consonanti sorde, due consonanti sonore e almeno due vocali appartenenti all&apos;inventario fonetico del paziente. Si consiglia di evitare le consonanti che differiscono solo per il tratto sordo-sonoro'
+        return '⚠️ Requisiti minimi: almeno 2 consonanti sorde, 2 consonanti sonore e 2 vocali. Si consiglia di evitare le consonanti che differiscono solo per il tratto sordo-sonoro.'
       case 3:
-        return 'Inserire due consonanti sorde, due consonanti sonore e almeno quattro vocali appartenenti all&apos;inventario fonetico del paziente. Si consiglia di evitare le consonanti che differiscono solo per il tratto sordo-sonoro'
+        return '⚠️ Requisiti minimi: almeno 2 consonanti sorde, 2 consonanti sonore e 4 vocali. Si consiglia di evitare le consonanti che differiscono solo per il tratto sordo-sonoro.'
       case 4:
-        return 'Inserire almeno due consonanti sorde, due consonanti sonore e almeno quattro vocali appartenenti all&apos;inventario fonetico del paziente. Si consiglia di evitare le consonanti che differiscono solo per il tratto sordo-sonoro'
+        return '⚠️ Requisiti minimi: almeno 2 consonanti sorde, 2 consonanti sonore e 4 vocali. Si consiglia di evitare le consonanti che differiscono solo per il tratto sordo-sonoro.'
       default:
         return ''
+    }
+  }
+
+  const getMinVocali = () => {
+    return selectedSyllables === 2 ? 2 : 4
+  }
+
+  const addPhoneme = (phoneme: string, type: 'sorde' | 'sonore' | 'vocali') => {
+    const cleanPhoneme = phoneme.replace(/\//g, '')
+
+    switch (type) {
+      case 'sorde':
+        if (!consonantiSorde.includes(cleanPhoneme)) {
+          setConsonantiSorde((prev) =>
+            prev ? `${prev} ${cleanPhoneme}` : cleanPhoneme
+          )
+        }
+        break
+      case 'sonore':
+        if (!consonantiSonore.includes(cleanPhoneme)) {
+          setConsonantiSonore((prev) =>
+            prev ? `${prev} ${cleanPhoneme}` : cleanPhoneme
+          )
+        }
+        break
+      case 'vocali':
+        if (!vocali.includes(cleanPhoneme)) {
+          setVocali((prev) => (prev ? `${prev} ${cleanPhoneme}` : cleanPhoneme))
+        }
+        break
     }
   }
 
@@ -91,13 +124,15 @@ export function WordGenerator() {
       .split(' ')
       .filter((v) => v.length > 0)
 
+    const minVocali = getMinVocali()
+
     if (
       sordeArray.length < 2 ||
       sonoreArray.length < 2 ||
-      vocaliArray.length < 2
+      vocaliArray.length < minVocali
     ) {
       alert(
-        'Per favore inserisci almeno 2 consonanti sorde, 2 sonore e 2 vocali'
+        `⚠️ Requisiti non soddisfatti!\n\nInserisci almeno:\n• 2 consonanti sorde (attualmente: ${sordeArray.length})\n• 2 consonanti sonore (attualmente: ${sonoreArray.length})\n• ${minVocali} vocali (attualmente: ${vocaliArray.length})`
       )
       return
     }
@@ -222,53 +257,126 @@ export function WordGenerator() {
     setRisultato(result)
 
     if (salvaPDF) {
-      const doc = new jsPDF('l')
-      doc.setFontSize(11)
+      generatePDF(result, words)
+    }
+  }
 
-      const pageWidth = doc.internal.pageSize.width
-      const columnWidth = pageWidth / 5
+  const generatePDF = (result: string, words: string[]) => {
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4')
 
-      for (let i = 0; i < 5; i++) {
-        const lista = result.split('\n\n')[i]
-        const lines = doc.splitTextToSize(lista, columnWidth - 20)
-        const pageHeight = doc.internal.pageSize.height
+      // Impostazioni per il PDF
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
 
-        let y = 20
+      // Titolo
+      doc.text('Liste di Non-Parole per Pratica Fonetica', 105, 20, {
+        align: 'center',
+      })
 
-        for (let j = 0; j < lines.length; j++) {
-          if (y > pageHeight) {
-            doc.addPage()
-            y = 20
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text(
+        `Parole ${selectedSyllables}-sillabiche • ${
+          words.length
+        } parole • ${new Date().toLocaleDateString('it-IT')}`,
+        105,
+        30,
+        { align: 'center' }
+      )
+
+      let yPosition = 45
+      const pageHeight = 280
+      const columnWidth = 90
+      const leftMargin = 15
+      const rightMargin = 105
+
+      // Divide le liste in due colonne
+      const lists = result.split('\n\n').filter((list) => list.trim())
+
+      for (let i = 0; i < lists.length; i++) {
+        const lista = lists[i].trim()
+        const lines = lista.split('\n')
+
+        // Determina la colonna (sinistra per liste dispari, destra per pari)
+        const isLeftColumn = i % 2 === 0
+        const xPosition = isLeftColumn ? leftMargin : rightMargin
+
+        // Se siamo nella colonna sinistra e non è la prima lista, potrebbe servire una nuova pagina
+        if (
+          isLeftColumn &&
+          i > 0 &&
+          yPosition + lines.length * 5 > pageHeight
+        ) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        // Se siamo nella colonna destra, usa la stessa y della colonna sinistra
+        if (!isLeftColumn) {
+          yPosition = yPosition - lists[i - 1].split('\n').length * 4.5 - 8
+        }
+
+        // Titolo della lista
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(11)
+        doc.text(lines[0], xPosition, yPosition)
+        yPosition += 8
+
+        // Parole della lista
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(10)
+
+        for (let j = 1; j < lines.length; j++) {
+          if (lines[j].trim()) {
+            doc.text(lines[j], xPosition, yPosition)
+            yPosition += 4.5
           }
-          doc.text(lines[j], columnWidth * i + 10, y)
-          y += 5
+        }
+
+        // Se siamo nella colonna sinistra, lascia spazio per la colonna destra
+        if (isLeftColumn) {
+          yPosition += 8
+        } else {
+          // Se siamo nella colonna destra, vai alla riga successiva
+          yPosition += 15
         }
       }
 
-      doc.save('parole_generate.pdf')
+      // Salva il PDF con nome più descrittivo
+      const fileName = `non-parole-${selectedSyllables}sill-${
+        new Date().toISOString().split('T')[0]
+      }.pdf`
+      doc.save(fileName)
+
+      // Feedback all'utente
+      alert(`✅ PDF generato con successo!\nFile: ${fileName}`)
+    } catch (error) {
+      console.error('Errore nella generazione del PDF:', error)
+      alert('❌ Errore nella generazione del PDF. Riprova.')
     }
   }
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-0">
       {/* Selezione sillabe */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg lg:text-xl">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl sm:text-2xl text-center">
             Seleziona il numero di sillabe
           </CardTitle>
-          <CardDescription className="text-sm lg:text-base">
+          <CardDescription className="text-center text-sm sm:text-base">
             Scegli quante sillabe devono avere le parole generate
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {[2, 3, 4].map((num) => (
               <Button
                 key={num}
                 variant={selectedSyllables === num ? 'default' : 'outline'}
                 onClick={() => handleSyllableSelection(num as SyllableCount)}
-                className="w-full sm:w-auto min-w-[120px] h-12 text-base"
+                className="w-full sm:w-auto min-w-[120px] h-12 text-base font-medium"
                 aria-pressed={selectedSyllables === num}
               >
                 {num} Sillabe
@@ -280,120 +388,185 @@ export function WordGenerator() {
 
       {/* Configurazione input */}
       {selectedSyllables && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg lg:text-xl">
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">
               Configurazione fonemi
             </CardTitle>
-            <CardDescription className="text-sm lg:text-base leading-relaxed">
+            <CardDescription className="text-sm leading-relaxed p-3 bg-amber-50 border border-amber-200 rounded-lg">
               {getInstructions()}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 lg:space-y-6">
+          <CardContent className="space-y-6">
             {/* Consonanti Sorde */}
-            <div className="space-y-2 lg:space-y-3">
-              <Label
-                htmlFor="consonanti-sorde"
-                className="text-sm lg:text-base font-medium"
-              >
-                Consonanti Sorde
-              </Label>
-              <p className="text-xs lg:text-sm text-muted-foreground">
-                Scegli tra: {CONSONANTI_SORDE.join(', ')}
-              </p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">
+                  Consonanti Sorde
+                  <span className="text-sm text-muted-foreground ml-2">
+                    (min. 2)
+                  </span>
+                </Label>
+                <div className="text-xs text-muted-foreground">
+                  Selezionate:{' '}
+                  {
+                    consonantiSorde
+                      .trim()
+                      .split(' ')
+                      .filter((c) => c.length > 0).length
+                  }
+                  /2+
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
+                {CONSONANTI_SORDE.map((consonante) => (
+                  <Button
+                    key={consonante}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addPhoneme(consonante, 'sorde')}
+                    className="h-8 px-3 text-sm"
+                    disabled={consonantiSorde.includes(
+                      consonante.replace(/\//g, '')
+                    )}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {consonante}
+                  </Button>
+                ))}
+              </div>
+
               <Textarea
-                id="consonanti-sorde"
                 placeholder="es: p t f s"
                 value={consonantiSorde}
                 onChange={(e) => setConsonantiSorde(e.target.value)}
-                className="min-h-16 lg:min-h-20 text-base"
-                aria-describedby="consonanti-sorde-help"
+                className="min-h-[60px] text-base"
               />
-              <p
-                id="consonanti-sorde-help"
-                className="text-xs text-muted-foreground"
-              >
-                Inserisci le consonanti separate da spazi
+              <p className="text-xs text-muted-foreground">
+                Inserisci le consonanti separate da spazi o usa i bottoni sopra
               </p>
             </div>
 
             {/* Consonanti Sonore */}
-            <div className="space-y-2 lg:space-y-3">
-              <Label
-                htmlFor="consonanti-sonore"
-                className="text-sm lg:text-base font-medium"
-              >
-                Consonanti Sonore
-              </Label>
-              <p className="text-xs lg:text-sm text-muted-foreground">
-                Scegli tra: {CONSONANTI_SONORE.join(', ')}
-              </p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">
+                  Consonanti Sonore
+                  <span className="text-sm text-muted-foreground ml-2">
+                    (min. 2)
+                  </span>
+                </Label>
+                <div className="text-xs text-muted-foreground">
+                  Selezionate:{' '}
+                  {
+                    consonantiSonore
+                      .trim()
+                      .split(' ')
+                      .filter((c) => c.length > 0).length
+                  }
+                  /2+
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
+                {CONSONANTI_SONORE.map((consonante) => (
+                  <Button
+                    key={consonante}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addPhoneme(consonante, 'sonore')}
+                    className="h-8 px-3 text-sm"
+                    disabled={consonantiSonore.includes(
+                      consonante.replace(/\//g, '')
+                    )}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {consonante}
+                  </Button>
+                ))}
+              </div>
+
               <Textarea
-                id="consonanti-sonore"
                 placeholder="es: b d v z m n l r"
                 value={consonantiSonore}
                 onChange={(e) => setConsonantiSonore(e.target.value)}
-                className="min-h-16 lg:min-h-20 text-base"
-                aria-describedby="consonanti-sonore-help"
+                className="min-h-[60px] text-base"
               />
-              <p
-                id="consonanti-sonore-help"
-                className="text-xs text-muted-foreground"
-              >
-                Inserisci le consonanti separate da spazi
+              <p className="text-xs text-muted-foreground">
+                Inserisci le consonanti separate da spazi o usa i bottoni sopra
               </p>
             </div>
 
             {/* Vocali */}
-            <div className="space-y-2 lg:space-y-3">
-              <Label
-                htmlFor="vocali"
-                className="text-sm lg:text-base font-medium"
-              >
-                Vocali
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">
+                  Vocali
+                  <span className="text-sm text-muted-foreground ml-2">
+                    (min. {getMinVocali()})
+                  </span>
+                </Label>
+                <div className="text-xs text-muted-foreground">
+                  Selezionate:{' '}
+                  {
+                    vocali
+                      .trim()
+                      .split(' ')
+                      .filter((v) => v.length > 0).length
+                  }
+                  /{getMinVocali()}+
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
+                {VOCALI_COMUNI.map((vocale) => (
+                  <Button
+                    key={vocale}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addPhoneme(vocale, 'vocali')}
+                    className="h-8 px-3 text-sm"
+                    disabled={vocali.includes(vocale.replace(/\//g, ''))}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {vocale}
+                  </Button>
+                ))}
+              </div>
+
               <Textarea
-                id="vocali"
                 placeholder="es: a e i o u"
                 value={vocali}
                 onChange={(e) => setVocali(e.target.value)}
-                className="min-h-16 lg:min-h-20 text-base"
-                aria-describedby="vocali-help"
+                className="min-h-[60px] text-base"
               />
-              <p id="vocali-help" className="text-xs text-muted-foreground">
-                Inserisci le vocali separate da spazi
+              <p className="text-xs text-muted-foreground">
+                Inserisci le vocali separate da spazi o usa i bottoni sopra
               </p>
             </div>
 
             {/* Numero doppie */}
-            <div className="space-y-2 lg:space-y-3">
-              <Label
-                htmlFor="numero-doppie"
-                className="text-sm lg:text-base font-medium"
-              >
+            <div className="space-y-3">
+              <Label className="text-base font-medium">
                 Numero di parole con consonanti doppie
               </Label>
               <Input
-                id="numero-doppie"
                 type="number"
                 min="0"
                 max="15"
                 value={numeroDoppie || ''}
                 onChange={(e) => setNumeroDoppie(parseInt(e.target.value) || 0)}
                 className="max-w-32 h-12 text-base"
-                aria-describedby="numero-doppie-help"
               />
-              <p
-                id="numero-doppie-help"
-                className="text-xs text-muted-foreground"
-              >
+              <p className="text-xs text-muted-foreground">
                 Quante parole devono contenere consonanti doppie (max 15)
               </p>
             </div>
 
             <Button
               onClick={generateWords}
-              className="w-full h-12 text-base lg:text-lg"
+              className="w-full h-12 text-base font-medium"
               size="lg"
             >
               Genera Parole
@@ -404,59 +577,59 @@ export function WordGenerator() {
 
       {/* Risultati e generazione liste */}
       {showResults && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg lg:text-xl">
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">
               Parole Generate
             </CardTitle>
-            <CardDescription className="text-sm lg:text-base">
+            <CardDescription className="text-sm">
               Puoi modificare manualmente le parole prima di generare le liste
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 lg:space-y-6">
-            <div className="space-y-2 lg:space-y-3">
-              <Label
-                htmlFor="parole-generate"
-                className="text-sm lg:text-base font-medium"
-              >
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-base font-medium">
                 Non-parole generate
               </Label>
               <Textarea
-                id="parole-generate"
                 value={paroleGenerate}
                 onChange={(e) => setParoleGenerate(e.target.value)}
-                className="min-h-24 lg:min-h-32 font-mono text-sm lg:text-base"
-                aria-describedby="parole-generate-help"
+                className="min-h-32 font-mono text-sm"
               />
-              <p
-                id="parole-generate-help"
-                className="text-xs text-muted-foreground"
-              >
+              <p className="text-xs text-muted-foreground">
                 Le parole sono separate da tab. Puoi modificarle se necessario.
               </p>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 lg:p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
               <Checkbox
                 id="salva-pdf"
                 checked={salvaPDF}
                 onCheckedChange={(checked) => setSalvaPDF(!!checked)}
                 className="h-5 w-5"
               />
-              <Label
-                htmlFor="salva-pdf"
-                className="text-sm lg:text-base font-medium cursor-pointer"
-              >
-                Salva automaticamente anche in PDF
-              </Label>
+              <div className="flex-1">
+                <Label
+                  htmlFor="salva-pdf"
+                  className="text-base font-medium cursor-pointer flex items-center"
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Genera automaticamente PDF professionale
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PDF ottimizzato per la stampa con layout a due colonne
+                </p>
+              </div>
             </div>
 
             <Button
               onClick={generateLists}
-              className="w-full h-12 text-base lg:text-lg"
+              className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               size="lg"
             >
+              <FileDown className="w-4 h-4 mr-2" />
               Genera 5 Liste Randomizzate
+              {salvaPDF && ' + PDF'}
             </Button>
           </CardContent>
         </Card>
@@ -464,35 +637,26 @@ export function WordGenerator() {
 
       {/* Risultato finale */}
       {risultato && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg lg:text-xl">Liste Generate</CardTitle>
-            <CardDescription className="text-sm lg:text-base">
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">Liste Generate</CardTitle>
+            <CardDescription className="text-sm">
               5 liste con ordine randomizzato delle parole
+              {salvaPDF && ' • PDF generato automaticamente'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 lg:space-y-3">
-              <Label
-                htmlFor="risultato-finale"
-                className="text-sm lg:text-base font-medium"
-              >
-                Risultato
-              </Label>
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Risultato</Label>
               <Textarea
-                id="risultato-finale"
                 value={risultato}
                 readOnly
-                className="min-h-64 lg:min-h-96 font-mono text-xs lg:text-sm"
-                aria-describedby="risultato-finale-help"
+                className="min-h-96 font-mono text-xs leading-relaxed"
               />
-              <p
-                id="risultato-finale-help"
-                className="text-xs text-muted-foreground"
-              >
-                Le 5 liste sono pronte per l&apos;uso.{' '}
-                {salvaPDF && 'Il PDF è stato generato automaticamente.'}
-              </p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground p-3 bg-green-50 border border-green-200 rounded-lg">
+                <span>✅ Le 5 liste sono pronte per l'uso</span>
+                {salvaPDF && <span>📄 PDF salvato automaticamente</span>}
+              </div>
             </div>
           </CardContent>
         </Card>
