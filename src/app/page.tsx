@@ -12,8 +12,7 @@ export default function Home() {
             Generatore di NON Parole
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Strumento professionale per generare liste di non-parole per la
-            pratica fonetica.
+            Strumento per generare liste di non-parole per la pratica fonetica.
             <br className="hidden sm:block" />
             Seleziona il numero di sillabe e configura i fonemi per iniziare.
           </p>

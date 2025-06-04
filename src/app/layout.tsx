@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Generatore di NON Parole - Strumento per la Pratica Fonetica',
   description:
-    'Strumento professionale per la generazione di liste di non-parole per la pratica fonetica. Supporta parole bi, tri e quadrisillabiche con controllo di consonanti e vocali.',
+    'Strumento per la generazione di liste di non-parole per la pratica fonetica. Supporta parole bi, tri e quadrisillabiche con controllo di consonanti e vocali.',
   keywords:
     'fonetica, logopedia, non-parole, generatore, pratica fonetica, sillabe',
   authors: [{ name: 'Tesi Marta' }],

@@ -55,7 +55,7 @@ export function WordGenerator() {
   const [numeroDoppie, setNumeroDoppie] = useState(0)
   const [paroleGenerate, setParoleGenerate] = useState('')
   const [risultato, setRisultato] = useState('')
-  const [salvaPDF, setSalvaPDF] = useState(true)
+  const [salvaPDF, setSalvaPDF] = useState(false)
   const [showResults, setShowResults] = useState(false)
 
   const handleSyllableSelection = (syllables: SyllableCount) => {
@@ -601,35 +601,28 @@ export function WordGenerator() {
               </p>
             </div>
 
-            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-3">
               <Checkbox
                 id="salva-pdf"
                 checked={salvaPDF}
                 onCheckedChange={(checked) => setSalvaPDF(!!checked)}
                 className="h-5 w-5"
               />
-              <div className="flex-1">
-                <Label
-                  htmlFor="salva-pdf"
-                  className="text-base font-medium cursor-pointer flex items-center"
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Genera automaticamente PDF professionale
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  PDF ottimizzato per la stampa con layout a due colonne
-                </p>
-              </div>
+              <Label
+                htmlFor="salva-pdf"
+                className="text-base font-medium cursor-pointer"
+              >
+                Genera anche PDF
+              </Label>
             </div>
 
             <Button
               onClick={generateLists}
-              className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="w-full h-12 text-base font-medium"
               size="lg"
             >
               <FileDown className="w-4 h-4 mr-2" />
               Genera 5 Liste Randomizzate
-              {salvaPDF && ' + PDF'}
             </Button>
           </CardContent>
         </Card>
